@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPG World Generator — ENGL 340 Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #050d1a; color: #e0eaf5; font-family: 'Syne', sans-serif; min-height: 100vh; }
+  .app { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .header { text-align: center; margin-bottom: 2rem; }
+  .header h1 { font-size: 1.8rem; font-weight: 800; color: #4fc3f7; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+  .header p { font-size: 0.8rem; color: #5a7a9a; letter-spacing: 0.12em; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
+  .api-row { display: flex; align-items: center; gap: 0.75rem; background: #0a1628; border: 1px solid #1e3d5c; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1rem; }
+  .api-row label { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: #4fc3f7; letter-spacing: 0.1em; white-space: nowrap; }
+  .api-row input { flex: 1; background: #050d1a; border: 1px solid #1e3d5c; border-radius: 4px; color: #e0eaf5; font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; padding: 0.35rem 0.7rem; outline: none; }
+  .api-row input:focus { border-color: #4fc3f7; }
+  .input-area { background: #0a1628; border: 1px solid #1e3d5c; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .input-label { font-size: 0.7rem; color: #4fc3f7; letter-spacing: 0.15em; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; margin-bottom: 0.5rem; }
+  .presets { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .preset-btn { background: #0d1f35; border: 1px solid #1e3d5c; border-radius: 20px; color: #7aaac8; font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; padding: 0.3rem 0.75rem; cursor: pointer; transition: all 0.15s; }
+  .preset-btn:hover { border-color: #4fc3f7; color: #4fc3f7; }
+  .prompt-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+  textarea { flex: 1; background: #050d1a; border: 1px solid #1e3d5c; border-radius: 6px; color: #e0eaf5; font-family: 'Share Tech Mono', monospace; font-size: 0.88rem; padding: 0.6rem 0.8rem; resize: none; height: 80px; line-height: 1.5; outline: none; }
+  textarea:focus { border-color: #4fc3f7; }
+  textarea::placeholder { color: #2a4a6a; }
+  .generate-btn { background: #4fc3f7; border: none; border-radius: 6px; color: #050d1a; font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; padding: 0 1.25rem; height: 80px; cursor: pointer; min-width: 120px; }
+  .generate-btn:hover:not(:disabled) { background: #81d4fa; }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .terminal { background: #020810; border: 1px solid #1e3d5c; border-radius: 8px; overflow: hidden; }
+  .terminal-bar { background: #0a1628; border-bottom: 1px solid #1e3d5c; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #5a2020; } .dot-y { background: #5a5020; } .dot-g { background: #205a20; }
+  .terminal-title { font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: #2a4a6a; margin-left: 0.5rem; }
+  .timer { font-size: 0.7rem; color: #2a8a2a; margin-left: auto; font-family: 'Share Tech Mono', monospace; }
+  .terminal-body { padding: 1.25rem 1.5rem; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; line-height: 1.9; min-height: 300px; }
+  .empty-state { color: #1e3d5c; padding-top: 2.5rem; text-align: center; font-size: 0.85rem; line-height: 2.2; }
+  .label { color: #4fc3f7; font-weight: bold; }
+  .value { color: #c8e6f5; }
+  .section-head { color: #f7b84e; margin-top: 0.9rem; }
+  .bullet { padding-left: 1rem; color: #c8e6f5; }
+  .cursor { display: inline-block; width: 8px; height: 0.9em; background: #4fc3f7; vertical-align: middle; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .analysis-box { margin-top: 1.5rem; border-top: 1px solid #1e3d5c; padding-top: 1rem; }
+  .analysis-label { font-size: 0.68rem; color: #e05a5a; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .analysis-item { color: #e08080; font-size: 0.8rem; margin-bottom: 0.4rem; padding-left: 1rem; border-left: 2px solid #4a1a1a; line-height: 1.5; }
+  .analysis-item.highlight { color: #e0a050; border-left-color: #4a3a1a; }
+  .err { color: #e05a5a; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>RPG WORLD GENERATOR</h1>
+    <p>AI Creativity Demo &nbsp;·&nbsp; ENGL 340 Project 2 &nbsp;·&nbsp; Spring 2026</p>
+  </div>
+
+  <div class="api-row">
+    <label>API KEY:</label>
+    <input id="apiKey" type="password" placeholder="Paste your Anthropic API key here  (sk-ant-...)">
+  </div>
+
+  <div class="input-area">
+    <div class="input-label">Prompt</div>
+    <div class="presets">
+      <button class="preset-btn" onclick="setPreset('apo')">post-apocalyptic</button>
+      <button class="preset-btn" onclick="setPreset('sea')">underwater civilization</button>
+      <button class="preset-btn" onclick="setPreset('stm')">steampunk empire</button>
+      <button class="preset-btn" onclick="setPreset('moo')">fractured moon colonies</button>
+    </div>
+    <div class="prompt-row">
+      <textarea id="prompt" placeholder="Design an open-world RPG set in a post-climate-collapse region with factions, questlines, and a morality system."></textarea>
+      <button class="generate-btn" id="genBtn" onclick="generate()">GENERATE<br>WORLD</button>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="terminal-title">claude-sonnet-4-20250514 &nbsp;·&nbsp; live output</span>
+      <span class="timer" id="timer"></span>
+    </div>
+    <div class="terminal-body" id="output">
+      <div class="empty-state">
+        Paste your API key above, pick a preset or write your own prompt,<br>
+        then hit GENERATE WORLD to see the AI build a civilization live.
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const P = {
+  apo: 'Design an open-world RPG set in a post-climate-collapse desert region with multiple factions, environmental hazards, and a morality tracking system.',
+  sea: 'Design an open-world RPG in an underwater civilization where oxygen is currency, with factions, questlines, and a pressure-based survival mechanic.',
+  stm: 'Design an open-world RPG in a steampunk empire on the brink of revolution, with class-based factions, branching questlines, and a loyalty system.',
+  moo: 'Design an open-world RPG set across fractured moon colonies fighting over the last water reserves, with factions, political intrigue, and a resource mechanic.'
+};
+function setPreset(k) { document.getElementById('prompt').value = P[k]; }
+
+let t0, tiv;
+function startTimer() { t0 = Date.now(); tiv = setInterval(() => { document.getElementById('timer').textContent = ((Date.now()-t0)/1000).toFixed(1)+'s'; }, 100); }
+function stopTimer() { clearInterval(tiv); }
+
+function renderLines(text) {
+  return text.split('\n').map(line => {
+    if (!line.trim()) return '<br>';
+    const sections = ['FACTIONS:','QUESTLINES:','ENVIRONMENTAL HAZARDS:','STARTING LOCATION:'];
+    if (sections.some(s => line.trim().startsWith(s))) return `<div class="section-head">${line}</div>`;
+    if (line.startsWith('-') || line.startsWith('•')) return `<div class="bullet">${line}</div>`;
+    const ci = line.indexOf(':');
+    if (ci > 0 && ci < 30 && !line.startsWith(' ')) {
+      return `<div><span class="label">${line.slice(0,ci+1)}</span><span class="value">${line.slice(ci+1)}</span></div>`;
+    }
+    return `<div class="value">${line}</div>`;
+  }).join('');
+}
+
+function renderAnalysis(elapsed) {
+  return `<div class="analysis-box">
+    <div class="analysis-label">&#9650; Critical Analysis — What You're Seeing</div>
+    <div class="analysis-item">Generated in ${elapsed}s — statistically probable output, not creative risk</div>
+    <div class="analysis-item">Factions balance symmetrically — AI avoids ideological asymmetry</div>
+    <div class="analysis-item">Morality / tracking mechanic labels a theme without embedding it in rules</div>
+    <div class="analysis-item">Questlines follow familiar genre conventions — combinational, not transformational</div>
+    <div class="analysis-item highlight">This is Boden's combinational creativity — recombination, not transformation</div>
+  </div>`;
+}
+
+async function generate() {
+  const key = document.getElementById('apiKey').value.trim();
+  const prompt = document.getElementById('prompt').value.trim();
+  const out = document.getElementById('output');
+  const btn = document.getElementById('genBtn');
+
+  if (!key) { out.innerHTML = '<span class="err">Please paste your Anthropic API key in the box above first.</span>'; return; }
+  if (!prompt) { out.innerHTML = '<span class="err">Please enter a prompt.</span>'; return; }
+
+  btn.disabled = true;
+  document.getElementById('timer').textContent = '0.0s';
+  startTimer();
+  out.innerHTML = '<span style="color:#5a7a9a">Connecting to model...</span><span class="cursor"></span>';
+
+  const sys = `You are an AI game world generator. Structure your response EXACTLY like this — use these exact labels:
+
+WORLD NAME: [name]
+SETTING: [2 sentence description]
+
+FACTIONS:
+- [Faction 1 name]: [one sentence]
+- [Faction 2 name]: [one sentence]
+- [Faction 3 name]: [one sentence]
+- [Faction 4 name]: [one sentence]
+
+CORE MECHANIC: [Name]: [1-2 sentences]
+
+QUESTLINES:
+- [Quest 1]: [one sentence]
+- [Quest 2]: [one sentence]
+- [Quest 3]: [one sentence]
+
+ENVIRONMENTAL HAZARDS: [2-3 sentences]
+
+STARTING LOCATION: [Name] — [one sentence]`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 900,
+        stream: true,
+        system: sys,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    let full = '';
+    out.innerHTML = '';
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of dec.decode(value).split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]' || !raw) continue;
+        try {
+          const j = JSON.parse(raw);
+          if (j.type === 'content_block_delta' && j.delta?.text) {
+            full += j.delta.text;
+            out.innerHTML = renderLines(full) + '<span class="cursor"></span>';
+          }
+        } catch(_) {}
+      }
+    }
+
+    stopTimer();
+    const elapsed = ((Date.now()-t0)/1000).toFixed(1);
+    out.innerHTML = renderLines(full) + renderAnalysis(elapsed);
+
+  } catch(e) {
+    stopTimer();
+    out.innerHTML = `<span class="err">Error: ${e.message}</span>`;
+  }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
